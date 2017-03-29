@@ -1,6 +1,6 @@
 # Weather Progressive Web Application
 
-Instal server with:
+Install server with:
 
         cd server
         node install
