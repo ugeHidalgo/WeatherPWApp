@@ -105,6 +105,13 @@
       app.container.appendChild(card);
       app.visibleCards[data.key] = card;
     }
+
+    //verify data is newer than what we already have, if not bail
+    var dateElem = card.querySelector('.date');
+    if (dateElem.getAttribute('data-dt') >= data.currently.time) {
+      return;
+    }
+
     card.querySelector('.description').textContent = data.currently.summary;
     card.querySelector('.date').textContent =
       new Date(data.currently.time * 1000);
@@ -154,7 +161,30 @@
   // Gets a forecast for a specific city and update the card with the data
   app.getForecast = function(key, label) {
     var url = weatherAPIUrlBase + key + '.json';
-    // Make the XHR to get the data, then update the card
+
+
+    /*Cache the network strategy: two calls, the one in the cache to lad the data asap, 
+      the second to update with fresh data. */
+
+    //This call is for the cache.    
+    if ('caches' in window) {
+      caches.match(url).then( function (response) {
+        if (response) {
+          response.json().then (function(json) {
+            if (app.hasRequestPending) {
+              //This is to avoid the case in wich the network response first.
+              json.key = key;
+              json.label = label;
+              app.updateForecastCard(json);
+            }
+          });
+        }
+      });
+    }
+
+
+    // Make the XHR to get the data, then update the card, this call is for the network
+    app.hasRequestPending=true; //This is to avoid the case in wich the network response first.
     var request = new XMLHttpRequest();
     request.onreadystatechange = function() {
       if (request.readyState === XMLHttpRequest.DONE) {
